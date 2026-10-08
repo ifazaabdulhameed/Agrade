@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A-Grade Storefront | Instagram Bio Shop</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body { background-color: #fcfbf9; color: #2c322e; font-family: system-ui, -apple-system, sans-serif; transition: background-color 0.5s ease; }
+    .glass { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border: 1px solid rgba(0, 0, 0, 0.06); }
+    #toast { transition: transform 0.3s ease, opacity 0.3s ease; }
+    #welcomeBanner { transition: opacity 0.6s ease, max-height 0.6s ease, margin 0.6s ease, padding 0.6s ease; max-height: 200px; opacity: 1; overflow: hidden; }
+    #welcomeBanner.fade-out { opacity: 0; max-height: 0; margin-top: 0 !important; margin-bottom: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important; border-width: 0 !important; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes pulse-slow { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+    .skeleton { animation: pulse-slow 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    
+    #ambientGlow {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.12;
+      filter: blur(80px);
+      transition: background 0.6s ease;
+    }
+    
+    #cartDrawer {
+      transition: transform 0.3s ease-in-out;
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-16 relative">
+
+  <div id="ambientGlow" style="background: radial-gradient(circle at 50% 30%, #5a7863 0%, transparent 70%);"></div>
+
+  <!-- TOAST -->
+  <div id="toast" class="fixed bottom-5 left-1/2 -translate-x-1/2 translate-y-16 opacity-0 z-50 bg-[#2c322e] text-[#fcfbf9] px-4 py-2.5 rounded-2xl shadow-xl border border-zinc-700 flex items-center space-x-2 text-xs font-medium pointer-events-none">
+    <i id="toastIcon" class="fa-solid fa-circle-check text-[#8fa896]"></i>
+    <span id="toastMsg">Action successful!</span>
+  </div>
+
+  <!-- HEADER -->
+  <header class="sticky top-0 z-40 glass px-4 py-3 flex items-center justify-between shadow-sm">
+    <div class="flex items-center space-x-3 cursor-pointer select-none" id="logoGroup">
+      <div class="w-10 h-10 rounded-xl bg-[#5a7863] text-[#fcfbf9] flex items-center justify-center font-bold text-xl shadow-sm">
+        A
+      </div>
+      <div>
+        <h1 class="font-bold text-lg leading-tight tracking-wide text-[#2c322e]">A-Grade</h1>
+        <p class="text-xs text-zinc-500 font-medium">Curated Deals & Bio Shop</p>
+      </div>
+    </div>
+
+    <div class="flex items-center space-x-2">
+      <div id="sync-status" class="hidden text-[10px] px-2 py-1 bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 rounded font-medium">Cloud Connected</div>
+      
+      <!-- CART BUTTON -->
+      <button onclick="openCartDrawer()" class="relative bg-[#f4f3ef] hover:bg-[#e9e7e2] text-[#2c322e] border border-zinc-200 w-9 h-9 rounded-xl text-xs font-semibold transition flex items-center justify-center shadow-sm">
+        <i class="fa-solid fa-bag-shopping text-zinc-600"></i>
+        <span id="cartBadge" class="absolute -top-1 -right-1 bg-[#5a7863] text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold hidden">0</span>
+      </button>
+
+      <button id="adminHeaderBtn" onclick="openAdminModal()" class="hidden bg-[#f4f3ef] hover:bg-[#e9e7e2] text-[#2c322e] border border-zinc-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center space-x-1.5">
+        <i class="fa-solid fa-user-shield text-zinc-500"></i>
+        <span>Admin</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- HERO & CONTROLS -->
+  <section class="max-w-xl mx-auto px-4 pt-6 pb-2 text-center relative z-10">
+    <h2 class="text-2xl font-bold tracking-tight text-[#2c322e]">
+      Find Products From Instagram
+    </h2>
+    <p class="text-zinc-500 text-xs mt-1">Enter Reel / Post Code or Search by Name</p>
+
+    <div id="welcomeBanner" class="mt-4 bg-white/80 border border-zinc-200/80 rounded-2xl p-3.5 text-center shadow-sm relative backdrop-blur-md">
+      <button onclick="dismissWelcome()" class="absolute top-2 right-2.5 text-zinc-400 hover:text-zinc-700 text-xs" title="Dismiss">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <h3 class="text-xs font-bold text-[#2c322e] flex items-center justify-center space-x-1.5">
+        <i class="fa-solid fa-hands-clapping text-[#5a7863]"></i>
+        <span>Welcome to A-Grade</span>
+      </h3>
+      <p class="text-[11px] text-zinc-500 mt-1">
+        Tap any product to view details, like items to your wishlist, or add them to cart!
+      </p>
+    </div>
+
+    <div class="mt-4 flex gap-2">
+      <div class="relative flex-1">
+        <input type="text" id="searchInput" oninput="handleSearch()" placeholder="Enter Code (e.g. #A101) or Name..."
+               class="w-full bg-white border border-zinc-200 rounded-2xl py-3 pl-10 pr-10 text-sm text-[#2c322e] placeholder-zinc-400 focus:outline-none focus:border-[#5a7863] shadow-sm">
+        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3.5 text-zinc-400 text-sm"></i>
+        <button id="clearSearchBtn" onclick="clearSearch()" class="hidden absolute right-3.5 top-3.5 text-zinc-400 hover:text-zinc-600">
+          <i class="fa-solid fa-circle-xmark"></i>
+        </button>
+      </div>
+      <select id="sortSelect" onchange="handleSort()" class="bg-white border border-zinc-200 rounded-2xl px-3 text-xs text-[#2c322e] focus:outline-none focus:border-[#5a7863] shadow-sm">
+        <option value="newest">Newest</option>
+        <option value="oldest">Oldest</option>
+      </select>
+    </div>
+
+    <!-- PLATFORM & WISHLIST TABS -->
+    <div class="flex items-center justify-center gap-2 mt-3 overflow-x-auto py-1 no-scrollbar text-xs">
+      <button onclick="setPlatform('all')" class="platform-tab px-3 py-1.5 rounded-full bg-[#5a7863] text-white border border-[#5a7863] font-medium shadow-sm">All Platforms</button>
+      <button onclick="setPlatform('Amazon')" class="platform-tab px-3 py-1.5 rounded-full bg-white text-zinc-600 border border-zinc-200 hover:border-[#5a7863] font-medium shadow-sm">Amazon</button>
+      <button onclick="setPlatform('Flipkart')" class="platform-tab px-3 py-1.5 rounded-full bg-white text-zinc-600 border border-zinc-200 hover:border-[#5a7863] font-medium shadow-sm">Flipkart</button>
+      <button onclick="setPlatform('Meesho')" class="platform-tab px-3 py-1.5 rounded-full bg-white text-zinc-600 border border-zinc-200 hover:border-[#5a7863] font-medium shadow-sm">Meesho</button>
+      <button onclick="setPlatform('liked')" class="platform-tab px-3 py-1.5 rounded-full bg-white text-rose-600 border border-zinc-200 hover:border-rose-400 font-semibold shadow-sm flex items-center space-x-1">
+        <i class="fa-solid fa-heart text-[10px]"></i>
+        <span>Liked (<span id="likedCount">0</span>)</span>
+      </button>
+    </div>
+
+    <div class="flex items-center justify-center gap-1.5 mt-2 overflow-x-auto py-1 no-scrollbar text-[11px]">
+      <button onclick="setCategory('all')" class="category-btn text-[#fcfbf9] bg-[#5a7863] border border-[#5a7863] px-2.5 py-1 rounded-md font-medium">All Categories</button>
+      <button onclick="setCategory('Gadgets')" class="category-btn text-zinc-600 bg-white border border-zinc-200 px-2.5 py-1 rounded-md font-medium shadow-sm">⚡ Gadgets</button>
+      <button onclick="setCategory('Fashion')" class="category-btn text-zinc-600 bg-white border border-zinc-200 px-2.5 py-1 rounded-md font-medium shadow-sm">👕 Fashion</button>
+      <button onclick="setCategory('Home')" class="category-btn text-zinc-600 bg-white border border-zinc-200 px-2.5 py-1 rounded-md font-medium shadow-sm">🏠 Home</button>
+      <button onclick="setCategory('Beauty')" class="category-btn text-zinc-600 bg-white border border-zinc-200 px-2.5 py-1 rounded-md font-medium shadow-sm">✨ Beauty</button>
+    </div>
+
+    <p id="dealCounter" class="text-[11px] text-zinc-400 mt-2 font-medium">Loading curated deals...</p>
+  </section>
+
+  <!-- PRODUCT GRID -->
+  <main class="max-w-xl mx-auto px-4 mt-3 relative z-10">
+    <div id="productGrid" class="grid grid-cols-2 gap-3">
+      <div class="bg-zinc-200/50 rounded-xl h-56 skeleton"></div>
+      <div class="bg-zinc-200/50 rounded-xl h-56 skeleton"></div>
+    </div>
+    <div id="noResults" class="hidden text-center py-12">
+      <i class="fa-solid fa-box-open text-4xl text-zinc-300 mb-2"></i>
+      <p class="text-zinc-500 text-sm">No products matching your search.</p>
+    </div>
+  </main>
+
+  <!-- CART DRAWER -->
+  <div id="cartOverlay" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-300" onclick="closeCartDrawer()"></div>
+  <div id="cartDrawer" class="fixed top-0 right-0 bottom-0 w-full max-w-sm bg-[#fcfbf9] border-l border-zinc-200 z-50 translate-x-full shadow-2xl flex flex-col">
+    <div class="p-4 border-b border-zinc-200 flex items-center justify-between bg-white">
+      <div class="flex items-center space-x-2">
+        <i class="fa-solid fa-bag-shopping text-[#5a7863]"></i>
+        <h3 class="font-bold text-sm text-[#2c322e]">Your Cart (<span id="cartItemCount">0</span>)</h3>
+      </div>
+      <button onclick="closeCartDrawer()" class="text-zinc-400 hover:text-zinc-700 w-8 h-8 rounded-full flex items-center justify-center">
+        <i class="fa-solid fa-xmark text-base"></i>
+      </button>
+    </div>
+
+    <div id="cartItemsList" class="flex-1 overflow-y-auto p-4 space-y-3"></div>
+
+    <div id="cartFooter" class="p-4 border-t border-zinc-200 bg-white space-y-3 hidden">
+      <div class="flex justify-between items-center text-xs">
+        <span class="text-zinc-500 font-medium">Selected Items:</span>
+        <span id="cartTotalSummary" class="font-bold text-[#2c322e]">0 items</span>
+      </div>
+      <button onclick="checkoutCart()" class="w-full bg-[#5a7863] hover:bg-[#4d6655] text-white font-bold py-3 rounded-xl text-xs transition flex items-center justify-center space-x-2 shadow-md">
+        <span>Proceed to Checkout All</span>
+        <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- PRODUCT DETAIL PAGE MODAL -->
+  <div id="productDetailModal" class="fixed inset-0 bg-black/40 backdrop-blur-md z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-[#fcfbf9] border border-zinc-200 w-full max-w-lg rounded-3xl overflow-hidden relative max-h-[92vh] flex flex-col shadow-2xl">
+      
+      <div class="absolute top-3 right-3 z-20 flex items-center space-x-2">
+        <button id="modalLikeBtn" onclick="toggleLikeActiveModal()" class="w-8 h-8 rounded-full bg-white/80 hover:bg-white text-zinc-700 flex items-center justify-center text-sm shadow transition">
+          <i class="fa-regular fa-heart"></i>
+        </button>
+        <button onclick="closeProductModal()" class="w-8 h-8 rounded-full bg-white/80 hover:bg-white text-zinc-700 flex items-center justify-center text-sm shadow transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="overflow-y-auto flex-1 p-4 sm:p-5 space-y-4">
+        <div class="relative rounded-2xl overflow-hidden bg-zinc-100 aspect-square group shadow-inner">
+          <img id="modalMainImg" src="" class="w-full h-full object-cover transition duration-300" alt="Product Detail">
+          
+          <button id="modalPrevBtn" onclick="modalChangeSlide(-1)" class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-zinc-800 w-8 h-8 rounded-full flex items-center justify-center text-sm shadow transition">
+            <i class="fa-solid fa-chevron-left"></i>
+          </button>
+          <button id="modalNextBtn" onclick="modalChangeSlide(1)" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-zinc-800 w-8 h-8 rounded-full flex items-center justify-center text-sm shadow transition">
+            <i class="fa-solid fa-chevron-right"></i>
+          </button>
+
+          <div id="modalImgBadge" class="absolute bottom-3 right-3 bg-white/80 backdrop-blur text-zinc-800 text-xs px-2 py-1 rounded-md font-medium shadow-sm">
+            1/1
+          </div>
+          <span id="modalPlatformBadge" class="absolute top-3 left-3 bg-white/90 backdrop-blur text-zinc-800 text-xs px-2.5 py-1 rounded-lg border border-zinc-200 font-semibold shadow-sm">
+            Amazon
+          </span>
+        </div>
+
+        <div id="modalThumbnails" class="flex gap-2 overflow-x-auto no-scrollbar py-1"></div>
+
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span id="modalCodeBadge" onclick="copyCode(this.innerText)" class="bg-[#f4f3ef] hover:bg-[#e9e7e2] text-[#2c322e] text-xs font-bold px-2.5 py-1 rounded-lg cursor-pointer transition border border-zinc-200 flex items-center space-x-1.5 shadow-sm">
+              <span id="modalCodeText">#A101</span>
+              <i class="fa-regular fa-copy text-[10px] text-zinc-500"></i>
+            </span>
+            <span id="modalCategoryBadge" class="text-xs text-zinc-500 font-medium">⚡ Gadgets</span>
+          </div>
+          <h2 id="modalTitle" class="text-lg sm:text-xl font-bold text-[#2c322e] leading-snug">Product Title Here</h2>
+        </div>
+
+        <div id="modalColorSection" class="hidden space-y-1.5 bg-[#f4f3ef]/60 p-3 rounded-xl border border-zinc-200/80">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-zinc-500 font-medium">Select Color Option:</span>
+            <span id="modalSelectedColorLabel" class="text-xs text-[#2c322e] font-bold"></span>
+          </div>
+          <div id="modalColorList" class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1"></div>
+        </div>
+
+        <div class="pt-1 grid grid-cols-2 gap-2">
+          <button id="modalAddToCartBtn" onclick="addModalToCart()" class="w-full bg-[#f4f3ef] hover:bg-[#e9e7e2] text-[#2c322e] border border-zinc-200 font-bold py-3.5 rounded-2xl text-xs transition flex items-center justify-center space-x-1.5 shadow-sm">
+            <i class="fa-solid fa-cart-plus text-sm"></i>
+            <span>Add to Cart</span>
+          </button>
+          <a id="modalBuyBtn" href="#" target="_blank" class="w-full bg-[#5a7863] hover:bg-[#4d6655] text-white font-bold py-3.5 rounded-2xl text-xs transition flex items-center justify-center space-x-1.5 shadow-md">
+            <span>Buy Now</span>
+            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+          </a>
+        </div>
+
+        <div class="pt-4 border-t border-zinc-200 space-y-3">
+          <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-400">Similar Products You Might Like</h3>
+          <div id="similarProductsGrid" class="grid grid-cols-2 gap-2.5"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN MODAL -->
+  <div id="adminModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#fcfbf9] border border-zinc-200 w-full max-w-md rounded-2xl p-5 relative max-h-[90vh] overflow-y-auto shadow-2xl">
+      <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-zinc-400 hover:text-zinc-700">
+        <i class="fa-solid fa-xmark text-lg"></i>
+      </button>
+
+      <div id="adminLoginForm">
+        <h3 class="text-lg font-bold text-[#2c322e] mb-1">Admin Access Lock</h3>
+        <p class="text-xs text-zinc-500 mb-4">Authorized device detected. Enter passcode to manage storefront.</p>
+        <input type="password" id="adminPassInput" placeholder="Enter Admin Passcode" class="w-full bg-white border border-zinc-200 rounded-xl px-3 py-2.5 text-sm mb-3 text-[#2c322e] focus:outline-none focus:border-[#5a7863] shadow-sm">
+        <button onclick="verifyPasscode()" class="w-full bg-[#5a7863] hover:bg-[#4d6655] text-white font-semibold py-2.5 rounded-xl text-sm transition shadow-sm">
+          Unlock Admin Panel
+        </button>
+      </div>
+
+      <div id="adminDashboard" class="hidden space-y-4">
+        <div class="border-b border-zinc-200 pb-3 flex justify-between items-center">
+          <h3 class="font-bold text-[#2c322e]">Manage Cloud Storefront</h3>
+          <button onclick="logoutAdmin()" class="text-xs text-zinc-500 hover:text-zinc-800 underline">Lock Session</button>
+        </div>
+
+        <div class="bg-[#f4f3ef] p-3 rounded-xl border border-zinc-200 space-y-2">
+          <div class="flex justify-between items-center">
+            <h4 id="formHeading" class="text-xs font-bold text-zinc-700">Add Product to Cloud</h4>
+            <button id="cancelEditBtn" onclick="resetProductForm()" class="hidden text-[10px] text-zinc-500 underline">Cancel Edit</button>
+          </div>
+          <input type="hidden" id="editProdId" value="">
+          
+          <input type="text" id="prodTitle" placeholder="Product Title" class="w-full bg-white border border-zinc-200 text-xs p-2 rounded text-[#2c322e] shadow-sm">
+          
+          <div class="flex items-center justify-between bg-white border border-zinc-200 px-3 py-2 rounded text-xs text-zinc-700 shadow-sm">
+            <span class="text-[11px] text-zinc-400">Product Code (Auto):</span>
+            <span id="autoGeneratedCodePreview" class="font-bold text-[#2c322e]">#A101</span>
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <select id="prodPlatform" class="bg-white border border-zinc-200 text-xs p-2 rounded text-[#2c322e] shadow-sm">
+              <option value="Amazon">Amazon</option>
+              <option value="Flipkart">Flipkart</option>
+              <option value="Meesho">Meesho</option>
+              <option value="Myntra">Myntra</option>
+            </select>
+            <select id="prodCategory" class="bg-white border border-zinc-200 text-xs p-2 rounded text-[#2c322e] shadow-sm">
+              <option value="Gadgets">⚡ Gadgets</option>
+              <option value="Fashion">👕 Fashion</option>
+              <option value="Home">🏠 Home</option>
+              <option value="Beauty">✨ Beauty</option>
+            </select>
+          </div>
+
+          <input type="url" id="prodUrl" placeholder="Affiliate Buy Link" class="w-full bg-white border border-zinc-200 text-xs p-2 rounded text-[#2c322e] shadow-sm">
+          <textarea id="prodImages" rows="3" placeholder="Image URLs (Paste one URL per line)" class="w-full bg-white border border-zinc-200 text-xs p-2 rounded text-[#2c322e] placeholder-zinc-400 focus:outline-none focus:border-[#5a7863] shadow-sm"></textarea>
+          <input type="text" id="prodColors" placeholder="Colors (e.g. #000000, Black, Tan)" class="w-full bg-white border border-zinc-200 text-xs p-2 rounded text-[#2c322e] placeholder-zinc-400 focus:outline-none focus:border-[#5a7863] shadow-sm">
+
+          <button id="saveProdBtn" onclick="saveProduct()" class="w-full bg-[#5a7863] hover:bg-[#4d6655] text-white font-semibold py-2 rounded text-xs shadow-sm">
+            Save to Cloud
+          </button>
+        </div>
+
+        <div class="bg-[#f4f3ef] p-3 rounded-xl border border-zinc-200 space-y-2">
+          <h4 class="text-xs font-bold text-zinc-700">📋 Existing Cloud Products</h4>
+          <div id="adminProductList" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
+        </div>
+
+        <div class="bg-[#f4f3ef] p-3 rounded-xl border border-zinc-200 space-y-2">
+          <h4 class="text-xs font-bold text-zinc-700">🔑 Security & Passcode Settings</h4>
+          <input type="password" id="currPass" placeholder="Current Password" class="w-full bg-white border border-zinc-200 text-xs p-2 rounded text-[#2c322e] mb-1 shadow-sm">
+          <input type="password" id="newPass" placeholder="New Password" class="w-full bg-white border border-zinc-200 text-xs p-2 rounded text-[#2c322e] mb-2 shadow-sm">
+          <button onclick="updatePasscode()" class="w-full bg-zinc-700 hover:bg-zinc-800 text-white font-semibold py-2 rounded text-xs shadow-sm">
+            Update Passcode
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let state = {
+      products: [],
+      filteredProducts: [],
+      likedIds: JSON.parse(localStorage.getItem('agrade_liked') || '[]'),
+      cart: JSON.parse(localStorage.getItem('agrade_cart') || '[]'),
+      searchQuery: '',
+      selectedPlatform: 'all',
+      selectedCategory: 'all',
+      sortOrder: 'newest',
+      activeModalProduct: null,
+      currentSlideIdx: 0,
+      modalSelectedColor: null,
+      selectedColors: {},
+      isAdmin: false,
+      adminPasscode: localStorage.getItem('agrade_pass') || '1234'
+    };
+
+    const defaultProducts = [
+      {
+        id: 'A101',
+        title: 'Minimalist PU Leather Handbag with Adjustable Strap',
+        platform: 'Amazon',
+        category: 'Fashion',
+        url: 'https://amazon.in',
+        images: [
+          'https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80',
+          'https://images.unsplash.com/photo-1591561954557-26941169b49e?auto=format&fit=crop&w=800&q=80'
+        ],
+        colors: '#000000:https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&w=800&q=80, Tan:https://images.unsplash.com/photo-1591561954557-26941169b49e?auto=format&fit=crop&w=800&q=80, Beige',
+        createdAt: Date.now() - 3600000
+      },
+      {
+        id: 'A102',
+        title: 'Wireless RGB Mechanical Gaming Keyboard & Mouse Combo',
+        platform: 'Flipkart',
+        category: 'Gadgets',
+        url: 'https://flipkart.com',
+        images: [
+          'https://images.unsplash.com/photo-1587829741301-dc798b83add3?auto=format&fit=crop&w=800&q=80'
+        ],
+        colors: 'Black, White',
+        createdAt: Date.now() - 7200000
+      }
+    ];
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadProducts();
+      setupLogoListener();
+      updateCartBadge();
+      updateLikedCount();
+    });
+
+    function loadProducts() {
+      const stored = localStorage.getItem('agrade_products');
+      if (stored) {
+        try {
+          state.products = JSON.parse(stored);
+        } catch(e) {
+          state.products = defaultProducts;
+        }
+      } else {
+        state.products = defaultProducts;
+        localStorage.setItem('agrade_products', JSON.stringify(defaultProducts));
+      }
+      applyFilters();
+      document.getElementById('sync-status').classList.remove('hidden');
+    }
+
+    function saveProductsToStorage() {
+      localStorage.setItem('agrade_products', JSON.stringify(state.products));
+      applyFilters();
+      if (state.isAdmin) renderAdminProductList();
+    }
+
+    let logoClicks = 0;
+    let logoTimer = null;
+    function setupLogoListener() {
+      document.getElementById('logoGroup').addEventListener('click', () => {
+        logoClicks++;
+        clearTimeout(logoTimer);
+        logoTimer = setTimeout(() => { logoClicks = 0; }, 1000);
+        if (logoClicks >= 5) {
+          logoClicks = 0;
+          openAdminModal();
+        }
+      });
+    }
+
+    function handleSearch() {
+      state.searchQuery = document.getElementById('searchInput').value.trim();
+      const clearBtn = document.getElementById('clearSearchBtn');
+      if (state.searchQuery) clearBtn.classList.remove('hidden');
+      else clearBtn.classList.add('hidden');
+      applyFilters();
+    }
+
+    function clearSearch() {
+      document.getElementById('searchInput').value = '';
+      state.searchQuery = '';
+      document.getElementById('clearSearchBtn').classList.add('hidden');
+      applyFilters();
+    }
+
+    function setPlatform(platform) {
+      document.querySelectorAll('.platform-tab').forEach(btn => {
+        btn.className = "platform-tab px-3 py-1.5 rounded-full bg-white text-zinc-600 border border-zinc-200 hover:border-[#5a7863] font-medium shadow-sm";
+      });
+      event.currentTarget.className = "platform-tab px-3 py-1.5 rounded-full bg-[#5a7863] text-white border border-[#5a7863] font-medium shadow-sm";
+      state.selectedPlatform = platform;
+      applyFilters();
+    }
+
+    function setCategory(cat) {
+      document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.className = "category-btn text-zinc-600 bg-white border border-zinc-200 px-2.5 py-1 rounded-md font-medium shadow-sm";
+      });
+      event.currentTarget.className = "category-btn text-[#fcfbf9] bg-[#5a7863] border border-[#5a7863] px-2.5 py-1 rounded-md font-medium";
+      state.selectedCategory = cat;
+      applyFilters();
+    }
+
+    function handleSort() {
+      state.sortOrder = document.getElementById('sortSelect').value;
+      applyFilters();
+    }
+
+    function applyFilters() {
+      let res = [...state.products];
+
+      if (state.selectedPlatform === 'liked') {
+        res = res.filter(p => state.likedIds.includes(p.id));
+      } else if (state.selectedPlatform !== 'all') {
+        res = res.filter(p => p.platform.toLowerCase() === state.selectedPlatform.toLowerCase());
+      }
+
+      if (state.selectedCategory !== 'all') {
+        res = res.filter(p => p.category === state.selectedCategory);
+      }
+
+      if (state.searchQuery) {
+        const q = state.searchQuery.toLowerCase();
+        res = res.filter(p => p.title.toLowerCase().includes(q) || p.id.toLowerCase().includes(q));
+      }
+
+      res.sort((a, b) => {
+        if (state.sortOrder === 'newest') return b.createdAt - a.createdAt;
+        return a.createdAt - b.createdAt;
+      });
+
+      state.filteredProducts = res;
+      renderProducts();
+    }
+
+    function renderProducts() {
+      const grid = document.getElementById('productGrid');
+      const noRes = document.getElementById('noResults');
+      const counter = document.getElementById('dealCounter');
+
+      counter.innerText = `Showing ${state.filteredProducts.length} curated deal${state.filteredProducts.length === 1 ? '' : 's'}`;
+
+      if (state.filteredProducts.length === 0) {
+        grid.innerHTML = '';
+        noRes.classList.remove('hidden');
+        return;
+      }
+
+      noRes.classList.add('hidden');
+      grid.innerHTML = state.filteredProducts.map(p => {
+        const isLiked = state.likedIds.includes(p.id);
+        const img = (p.images && p.images.length > 0) ? p.images[0] : 'https://via.placeholder.com/400';
+        return `
+          <div class="bg-white border border-zinc-200/80 rounded-2xl overflow-hidden shadow-sm flex flex-col group transition hover:shadow-md">
+            <div class="relative aspect-square bg-zinc-100 overflow-hidden cursor-pointer" onclick="openProductModal('${p.id}')">
+              <img src="${img}" class="w-full h-full object-cover group-hover:scale-105 transition duration-500" alt="${escapeHtml(p.title)}">
+              <span class="absolute top-2 left-2 bg-white/90 backdrop-blur text-[10px] font-bold px-2 py-0.5 rounded-md border border-zinc-200 shadow-sm">
+                ${p.platform}
+              </span>
+              <button onclick="event.stopPropagation(); toggleLike('${p.id}')" class="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 backdrop-blur flex items-center justify-center text-xs shadow transition ${isLiked ? 'text-rose-600' : 'text-zinc-500 hover:text-zinc-800'}">
+                <i class="${isLiked ? 'fa-solid' : 'fa-regular'} fa-heart"></i>
+              </button>
+            </div>
+            <div class="p-3 flex flex-col flex-1 justify-between">
+              <div>
+                <div class="flex items-center justify-between text-[10px] text-zinc-400 mb-1">
+                  <span class="font-bold text-[#2c322e] bg-[#f4f3ef] px-1.5 py-0.5 rounded">${p.id}</span>
+                  <span>${p.category || 'General'}</span>
+                </div>
+                <h3 onclick="openProductModal('${p.id}')" class="font-semibold text-xs text-[#2c322e] line-clamp-2 cursor-pointer hover:underline">
+                  ${escapeHtml(p.title)}
+                </h3>
+              </div>
+              <div class="mt-3 pt-2 border-t border-zinc-100 flex items-center gap-1.5">
+                <button onclick="openProductModal('${p.id}')" class="flex-1 bg-[#f4f3ef] hover:bg-[#e9e7e2] text-[#2c322e] text-[11px] font-bold py-2 rounded-xl transition text-center shadow-sm">
+                  View Details
+                </button>
+                <a href="${p.url}" target="_blank" class="bg-[#5a7863] hover:bg-[#4d6655] text-white px-3 py-2 rounded-xl text-[11px] font-bold transition shadow-sm" title="Buy Direct">
+                  <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleLike(id) {
+      if (state.likedIds.includes(id)) {
+        state.likedIds = state.likedIds.filter(i => i !== id);
+        showToast('Removed from liked items', 'fa-heart-crack');
+      } else {
+        state.likedIds.push(id);
+        showToast('Added to liked items!', 'fa-heart');
+      }
+      localStorage.setItem('agrade_liked', JSON.stringify(state.likedIds));
+      updateLikedCount();
+      applyFilters();
+      if (state.activeModalProduct && state.activeModalProduct.id === id) {
+        updateModalLikeState();
+      }
+    }
+
+    function toggleLikeActiveModal() {
+      if (!state.activeModalProduct) return;
+      toggleLike(state.activeModalProduct.id);
+    }
+
+    function updateLikedCount() {
+      document.getElementById('likedCount').innerText = state.likedIds.length;
+    }
+
+    function openProductModal(id) {
+      const prod = state.products.find(p => p.id === id);
+      if (!prod) return;
+      state.activeModalProduct = prod;
+      state.currentSlideIdx = 0;
+      
+      let rawColors = [];
+      if (prod.colors) {
+        rawColors = Array.isArray(prod.colors) ? prod.colors : prod.colors.split(',').map(s => s.trim());
+      }
+      if (rawColors.length > 0) {
+        let firstParts = rawColors[0].split(':');
+        state.modalSelectedColor = firstParts[0].trim();
+      } else {
+        state.modalSelectedColor = null;
+      }
+
+      updateModalView();
+      renderModalThumbnails();
+      renderModalColors(prod);
+      renderSimilarProducts(prod);
+      updateModalLikeState();
+
+      document.getElementById('productDetailModal').classList.remove('hidden');
+    }
+
+    function closeProductModal() {
+      document.getElementById('productDetailModal').classList.add('hidden');
+      state.activeModalProduct = null;
+    }
+
+    function updateModalView() {
+      const prod = state.activeModalProduct;
+      if (!prod) return;
+
+      const mainImg = document.getElementById('modalMainImg');
+      const imgs = prod.images && prod.images.length > 0 ? prod.images : ['https://via.placeholder.com/400'];
+      
+      let displayImg = imgs[state.currentSlideIdx];
+      if (state.currentSlideIdx === 0 && prod.colors) {
+        let rawColors = Array.isArray(prod.colors) ? prod.colors : prod.colors.split(',').map(s => s.trim());
+        let matched = rawColors.find(c => c.split(':')[0].trim() === state.modalSelectedColor);
+        if (matched && matched.split(':')[1]) {
+          displayImg = matched.split(':')[1].trim();
+        }
+      }
+
+      mainImg.src = displayImg;
+      mainImg.style.filter = 'none';
+
+      document.getElementById('modalTitle').innerText = prod.title;
+      document.getElementById('modalCodeText').innerText = prod.id;
+      document.getElementById('modalPlatformBadge').innerText = prod.platform;
+      document.getElementById('modalCategoryBadge').innerText = prod.category || 'General';
+      document.getElementById('modalBuyBtn').href = prod.url;
+      document.getElementById('modalImgBadge').innerText = `${state.currentSlideIdx + 1}/${imgs.length}`;
+
+      const prevBtn = document.getElementById('modalPrevBtn');
+      const nextBtn = document.getElementById('modalNextBtn');
+      if (imgs.length <= 1) {
+        prevBtn.classList.add('hidden');
+        nextBtn.classList.add('hidden');
+      } else {
+        prevBtn.classList.remove('hidden');
+        nextBtn.classList.remove('hidden');
+      }
+    }
+
+    function renderModalThumbnails() {
+      const prod = state.activeModalProduct;
+      const container = document.getElementById('modalThumbnails');
+      if (!prod.images || prod.images.length <= 1) {
+        container.innerHTML = '';
+        container.classList.add('hidden');
+        return;
+      }
+      container.classList.remove('hidden');
+      container.innerHTML = prod.images.map((img, idx) => `
+        <div onclick="setModalSlide(${idx})" class="w-14 h-14 rounded-xl overflow-hidden border-2 cursor-pointer flex-shrink-0 transition ${state.currentSlideIdx === idx ? 'border-[#5a7863] scale-105 shadow-sm' : 'border-zinc-200 opacity-70 hover:opacity-100'}">
+          <img src="${img}" class="w-full h-full object-cover" alt="Thumb">
+        </div>
+      `).join('');
+    }
+
+    function setModalSlide(idx) {
+      const prod = state.activeModalProduct;
+      if (!prod.images || idx < 0 || idx >= prod.images.length) return;
+      state.currentSlideIdx = idx;
+      updateModalView();
+      renderModalThumbnails();
+    }
+
+    function modalChangeSlide(dir) {
+      const prod = state.activeModalProduct;
+      if (!prod.images) return;
+      let newIdx = state.currentSlideIdx + dir;
+      if (newIdx < 0) newIdx = prod.images.length - 1;
+      if (newIdx >= prod.images.length) newIdx = 0;
+      setModalSlide(newIdx);
+    }
+
+    function updateModalLikeState() {
+      const prod = state.activeModalProduct;
+      if (!prod) return;
+      const isLiked = state.likedIds.includes(prod.id);
+      const btn = document.getElementById('modalLikeBtn');
+      btn.innerHTML = `<i class="${isLiked ? 'fa-solid text-rose-600' : 'fa-regular'} fa-heart"></i>`;
+    }
+
+    function renderModalColors(product) {
+      const colorSection = document.getElementById('modalColorSection');
+      const colorList = document.getElementById('modalColorList');
+      const colorLabel = document.getElementById('modalSelectedColorLabel');
+      
+      if (!product.colors || (Array.isArray(product.colors) && product.colors.length === 0)) {
+        colorSection.classList.add('hidden');
+        return;
+      }
+
+      colorSection.classList.remove('hidden');
+      colorList.innerHTML = '';
+
+      let rawColors = Array.isArray(product.colors) ? product.colors : product.colors.split(',').map(s => s.trim());
+      
+      rawColors.forEach((colorEntry) => {
+        let parts = colorEntry.split(':');
+        let colorName = parts[0].trim();
+        let colorImg = parts[1] ? parts[1].trim() : null;
+
+        const btn = document.createElement('button');
+        btn.className = `px-3 py-1.5 rounded-xl text-xs font-semibold border transition flex items-center space-x-1.5 ${
+          state.modalSelectedColor === colorName 
+            ? 'bg-[#5a7863] text-white border-[#5a7863] shadow-sm' 
+            : 'bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400'
+        }`;
+        
+        let dotHtml = colorName.startsWith('#') ? `<span class="w-3 h-3 rounded-full border border-black/10 inline-block" style="background-color: ${colorName};"></span>` : '';
+        
+        btn.innerHTML = `${dotHtml}<span>${escapeHtml(colorName)}</span>`;
+        
+        btn.onclick = () => {
+          state.modalSelectedColor = colorName;
+          state.selectedColors[product.id] = colorName;
+          
+          if (colorImg) {
+            const mainImg = document.getElementById('modalMainImg');
+            if (mainImg) {
+              mainImg.src = colorImg;
+              mainImg.style.filter = 'none';
+            }
+          } else {
+            applyColorTintFilter(colorName);
+          }
+
+          colorLabel.innerText = colorName;
+          renderModalColors(product);
+        };
+
+        colorList.appendChild(btn);
+      });
+
+      if (!state.modalSelectedColor && rawColors.length > 0) {
+        let firstParts = rawColors[0].split(':');
+        state.modalSelectedColor = firstParts[0].trim();
+      }
+      colorLabel.innerText = state.modalSelectedColor || 'Default';
+    }
+
+    function applyColorTintFilter(colorName) {
+      const mainImg = document.getElementById('modalMainImg');
+      if (!mainImg) return;
+
+      const lower = colorName.toLowerCase();
+      if (lower.includes('tan') || lower.includes('brown') || lower.includes('beige') || lower.includes('camel')) {
+        mainImg.style.filter = 'sepia(0.6) hue-rotate(-10deg) brightness(0.95)';
+      } else if (lower.includes('red') || lower.includes('maroon')) {
+        mainImg.style.filter = 'sepia(0.8) saturate(3) hue-rotate(-50deg)';
+      } else if (lower.includes('blue') || lower.includes('navy')) {
+        mainImg.style.filter = 'hue-rotate(180deg) brightness(0.9)';
+      } else if (lower.includes('white') || lower.includes('cream')) {
+        mainImg.style.filter = 'brightness(1.2) grayscale(0.2)';
+      } else {
+        mainImg.style.filter = 'none';
+      }
+    }
+
+    function renderSimilarProducts(currentProd) {
+      const grid = document.getElementById('similarProductsGrid');
+      let sims = state.products.filter(p => p.category === currentProd.category && p.id !== currentProd.id).slice(0, 2);
+      if (sims.length === 0) {
+        sims = state.products.filter(p => p.id !== currentProd.id).slice(0, 2);
+      }
+
+      if (sims.length === 0) {
+        grid.innerHTML = '<p class="text-[11px] text-zinc-400 col-span-2">No similar products available.</p>';
+        return;
+      }
+
+      grid.innerHTML = sims.map(p => {
+        let img = (p.images && p.images.length > 0) ? p.images[0] : 'https://via.placeholder.com/200';
+        return `
+          <div onclick="openProductModal('${p.id}')" class="bg-white border border-zinc-200 rounded-xl p-2 cursor-pointer hover:border-[#5a7863] transition flex items-center space-x-2 shadow-sm">
+            <img src="${img}" class="w-12 h-12 rounded-lg object-cover flex-shrink-0" alt="Sim">
+            <div class="overflow-hidden">
+              <h4 class="font-bold text-[11px] text-[#2c322e] truncate">${escapeHtml(p.title)}</h4>
+              <span class="text-[10px] text-zinc-400">${p.platform}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function addModalToCart() {
+      const prod = state.activeModalProduct;
+      if (!prod) return;
+      
+      const chosenColor = state.modalSelectedColor || 'Standard';
+      const cartItemKey = `${prod.id}_${chosenColor}`;
+      
+      const existing = state.cart.find(item => item.cartKey === cartItemKey);
+      if (existing) {
+        existing.qty += 1;
+      } else {
+        state.cart.push({
+          cartKey: cartItemKey,
+          id: prod.id,
+          title: prod.title,
+          platform: prod.platform,
+          url: prod.url,
+          image: (prod.images && prod.images.length > 0) ? prod.images[0] : '',
+          color: chosenColor,
+          qty: 1
+        });
+      }
+
+      localStorage.setItem('agrade_cart', JSON.stringify(state.cart));
+      updateCartBadge();
+      showToast(`Added to cart (${chosenColor})!`, 'fa-cart-shopping');
+      closeProductModal();
+      openCartDrawer();
+    }
+
+    function updateCartBadge() {
+      const badge = document.getElementById('cartBadge');
+      const totalQty = state.cart.reduce((sum, item) => sum + item.qty, 0);
+      if (totalQty > 0) {
+        badge.innerText = totalQty;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    function openCartDrawer() {
+      renderCartItems();
+      const overlay = document.getElementById('cartOverlay');
+      const drawer = document.getElementById('cartDrawer');
+      overlay.classList.remove('hidden');
+      setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+      drawer.classList.remove('translate-x-full');
+    }
+
+    function closeCartDrawer() {
+      const overlay = document.getElementById('cartOverlay');
+      const drawer = document.getElementById('cartDrawer');
+      overlay.classList.add('opacity-0');
+      drawer.classList.add('translate-x-full');
+      setTimeout(() => overlay.classList.add('hidden'), 300);
+    }
+
+    function renderCartItems() {
+      const list = document.getElementById('cartItemsList');
+      const footer = document.getElementById('cartFooter');
+      const countLabel = document.getElementById('cartItemCount');
+      const summaryLabel = document.getElementById('cartTotalSummary');
+
+      const totalQty = state.cart.reduce((sum, item) => sum + item.qty, 0);
+      countLabel.innerText = totalQty;
+      summaryLabel.innerText = `${totalQty} item${totalQty === 1 ? '' : 's'}`;
+
+      if (state.cart.length === 0) {
+        list.innerHTML = `
+          <div class="text-center py-16">
+            <i class="fa-solid fa-bag-shopping text-4xl text-zinc-300 mb-2"></i>
+            <p class="text-zinc-500 text-xs">Your cart is empty.</p>
+          </div>
+        `;
+        footer.classList.add('hidden');
+        return;
+      }
+
+      footer.classList.remove('hidden');
+      list.innerHTML = state.cart.map((item, idx) => `
+        <div class="bg-white border border-zinc-200 rounded-2xl p-3 flex items-center space-x-3 shadow-sm">
+          <img src="${item.image}" class="w-16 h-16 rounded-xl object-cover border border-zinc-100 flex-shrink-0" alt="Item">
+          <div class="flex-1 overflow-hidden">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] font-bold text-[#2c322e] bg-[#f4f3ef] px-1.5 py-0.5 rounded">${item.id}</span>
+              <span class="text-[10px] text-zinc-400 font-medium">${item.platform}</span>
+            </div>
+            <h4 class="font-semibold text-xs text-[#2c322e] truncate mt-0.5">${escapeHtml(item.title)}</h4>
+            <p class="text-[11px] text-zinc-500 mt-0.5">Color: <span class="font-medium text-[#2c322e]">${escapeHtml(item.color)}</span></p>
+            <div class="flex items-center justify-between mt-2">
+              <div class="flex items-center space-x-2 border border-zinc-200 rounded-lg px-2 py-0.5">
+                <button onclick="updateCartQty(${idx}, -1)" class="text-zinc-400 hover:text-zinc-700 text-xs">-</button>
+                <span class="text-xs font-bold text-[#2c322e]">${item.qty}</span>
+                <button onclick="updateCartQty(${idx}, 1)" class="text-zinc-400 hover:text-zinc-700 text-xs">+</button>
+              </div>
+              <button onclick="removeCartItem(${idx})" class="text-rose-500 hover:text-rose-700 text-xs">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function updateCartQty(idx, delta) {
+      state.cart[idx].qty += delta;
+      if (state.cart[idx].qty <= 0) {
+        state.cart.splice(idx, 1);
+      }
+      localStorage.setItem('agrade_cart', JSON.stringify(state.cart));
+      updateCartBadge();
+      renderCartItems();
+    }
+
+    function removeCartItem(idx) {
+      state.cart.splice(idx, 1);
+      localStorage.setItem('agrade_cart', JSON.stringify(state.cart));
+      updateCartBadge();
+      renderCartItems();
+    }
+
+    function checkoutCart() {
+      if (state.cart.length === 0) return;
+      state.cart.forEach(item => {
+        window.open(item.url, '_blank');
+      });
+      showToast('Opening checkout links...', 'fa-arrow-up-right-from-square');
+    }
+
+    function openAdminModal() {
+      document.getElementById('adminModal').classList.remove('hidden');
+      if (state.isAdmin) {
+        document.getElementById('adminLoginForm').classList.add('hidden');
+        document.getElementById('adminDashboard').classList.remove('hidden');
+        renderAdminProductList();
+      } else {
+        document.getElementById('adminLoginForm').classList.remove('hidden');
+        document.getElementById('adminDashboard').classList.add('hidden');
+      }
+    }
+
+    function closeAdminModal() {
+      document.getElementById('adminModal').classList.add('hidden');
+    }
+
+    function verifyPasscode() {
+      const val = document.getElementById('adminPassInput').value;
+      if (val === state.adminPasscode) {
+        state.isAdmin = true;
+        document.getElementById('adminPassInput').value = '';
+        document.getElementById('adminLoginForm').classList.add('hidden');
+        document.getElementById('adminDashboard').classList.remove('hidden');
+        document.getElementById('adminHeaderBtn').classList.remove('hidden');
+        renderAdminProductList();
+        showToast('Admin panel unlocked!', 'fa-user-shield');
+      } else {
+        showToast('Incorrect passcode!', 'fa-circle-xmark');
+      }
+    }
+
+    function logoutAdmin() {
+      state.isAdmin = false;
+      document.getElementById('adminHeaderBtn').classList.add('hidden');
+      closeAdminModal();
+      showToast('Admin session locked', 'fa-lock');
+    }
+
+    function generateNextProductId() {
+      let maxNum = 100;
+      state.products.forEach(p => {
+        if (p.id.startsWith('A')) {
+          let num = parseInt(p.id.substring(1));
+          if (!isNaN(num) && num > maxNum) maxNum = num;
+        }
+      });
+      return `#A${maxNum + 1}`;
+    }
+
+    function renderAdminProductList() {
+      const list = document.getElementById('adminProductList');
+      document.getElementById('autoGeneratedCodePreview').innerText = generateNextProductId();
+
+      if (state.products.length === 0) {
+        list.innerHTML = '<p class="text-[11px] text-zinc-400">No cloud products found.</p>';
+        return;
+      }
+
+      list.innerHTML = state.products.map(p => `
+        <div class="bg-white border border-zinc-200 rounded-lg p-2 flex items-center justify-between text-xs shadow-sm">
+          <div class="flex items-center space-x-2 overflow-hidden">
+            <span class="font-bold text-[#2c322e] bg-[#f4f3ef] px-1.5 py-0.5 rounded">${p.id}</span>
+            <span class="truncate font-medium text-zinc-700">${escapeHtml(p.title)}</span>
+          </div>
+          <div class="flex items-center space-x-1.5 flex-shrink-0">
+            <button onclick="editProduct('${p.id}')" class="text-blue-600 hover:text-blue-800 p-1" title="Edit">
+              <i class="fa-solid fa-pen-to-square"></i>
+            </button>
+            <button onclick="deleteProduct('${p.id}')" class="text-rose-500 hover:text-rose-700 p-1" title="Delete">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function saveProduct() {
+      const editId = document.getElementById('editProdId').value;
+      const title = document.getElementById('prodTitle').value.trim();
+      const platform = document.getElementById('prodPlatform').value;
+      const category = document.getElementById('prodCategory').value;
+      const url = document.getElementById('prodUrl').value.trim();
+      const imagesText = document.getElementById('prodImages').value.trim();
+      const colors = document.getElementById('prodColors').value.trim();
+
+      if (!title || !url) {
+        showToast('Please enter title and buy URL', 'fa-circle-xmark');
+        return;
+      }
+
+      let images = imagesText ? imagesText.split('\n').map(s => s.trim()).filter(s => s.length > 0) : ['https://via.placeholder.com/400'];
+
+      if (editId) {
+        const idx = state.products.findIndex(p => p.id === editId);
+        if (idx !== -1) {
+          state.products[idx].title = title;
+          state.products[idx].platform = platform;
+          state.products[idx].category = category;
+          state.products[idx].url = url;
+          state.products[idx].images = images;
+          state.products[idx].colors = colors;
+        }
+        showToast('Product updated successfully!', 'fa-circle-check');
+      } else {
+        const newProd = {
+          id: generateNextProductId(),
+          title,
+          platform,
+          category,
+          url,
+          images,
+          colors,
+          createdAt: Date.now()
+        };
+        state.products.unshift(newProd);
+        showToast('Product added to cloud!', 'fa-cloud-arrow-up');
+      }
+
+      saveProductsToStorage();
+      resetProductForm();
+    }
+
+    function editProduct(id) {
+      const p = state.products.find(item => item.id === id);
+      if (!p) return;
+
+      document.getElementById('editProdId').value = p.id;
+      document.getElementById('prodTitle').value = p.title;
+      document.getElementById('prodPlatform').value = p.platform;
+      document.getElementById('prodCategory').value = p.category || 'Gadgets';
+      document.getElementById('prodUrl').value = p.url;
+      document.getElementById('prodImages').value = p.images ? p.images.join('\n') : '';
+      document.getElementById('prodColors').value = p.colors || '';
+
+      document.getElementById('formHeading').innerText = `Edit Product (${p.id})`;
+      document.getElementById('saveProdBtn').innerText = 'Update Product';
+      document.getElementById('cancelEditBtn').classList.remove('hidden');
+      document.getElementById('autoGeneratedCodePreview').innerText = p.id;
+    }
+
+    function resetProductForm() {
+      document.getElementById('editProdId').value = '';
+      document.getElementById('prodTitle').value = '';
+      document.getElementById('prodUrl').value = '';
+      document.getElementById('prodImages').value = '';
+      document.getElementById('prodColors').value = '';
+      document.getElementById('formHeading').innerText = 'Add Product to Cloud';
+      document.getElementById('saveProdBtn').innerText = 'Save to Cloud';
+      document.getElementById('cancelEditBtn').classList.add('hidden');
+      document.getElementById('autoGeneratedCodePreview').innerText = generateNextProductId();
+    }
+
+    function deleteProduct(id) {
+      if (confirm(`Are you sure you want to delete product ${id}?`)) {
+        state.products = state.products.filter(p => p.id !== id);
+        saveProductsToStorage();
+        showToast('Product deleted', 'fa-trash-can');
+        resetProductForm();
+      }
+    }
+
+    function updatePasscode() {
+      const curr = document.getElementById('currPass').value;
+      const next = document.getElementById('newPass').value;
+      if (curr !== state.adminPasscode) {
+        showToast('Current password incorrect', 'fa-circle-xmark');
+        return;
+      }
+      if (!next || next.length < 3) {
+        showToast('New password too short', 'fa-circle-xmark');
+        return;
+      }
+      state.adminPasscode = next;
+      localStorage.setItem('agrade_pass', next);
+      document.getElementById('currPass').value = '';
+      document.getElementById('newPass').value = '';
+      showToast('Admin passcode updated!', 'fa-key');
+    }
+
+    function dismissWelcome() {
+      const banner = document.getElementById('welcomeBanner');
+      banner.classList.add('fade-out');
+      setTimeout(() => banner.style.display = 'none', 600);
+    }
+
+    function copyCode(code) {
+      navigator.clipboard.writeText(code.trim());
+      showToast(`Copied code: ${code.trim()}`, 'fa-copy');
+    }
+
+    function showToast(msg, iconClass) {
+      const toast = document.getElementById('toast');
+      const msgSpan = document.getElementById('toastMsg');
+      const icon = document.getElementById('toastIcon');
+
+      msgSpan.innerText = msg;
+      icon.className = `fa-solid ${iconClass} text-[#8fa896]`;
+
+      toast.classList.remove('translate-y-16', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-16', 'opacity-0');
+      }, 2500);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
+
